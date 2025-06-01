@@ -5,77 +5,47 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    private bool _thrusting;
-    private float _turnDirection;
-    public float thrustSpeed = 1.0f;
-    public float turnSpeed = 1.0f;
-    private Rigidbody2D _rigidbody2D;
-    public float respawnShieldTime = 3.0f;
-    private void Awake()
-    {
-        _rigidbody2D = GetComponent<Rigidbody2D>();
-    }
+    private float horizontal;
+    private float speed = 2f;
+    private float jumpingPower = 16f;
+    private bool isFacingRight = true;
 
-    private void OnEnable()
-    {
-        this.gameObject.layer = LayerMask.NameToLayer("NoCollision");
-        this.Invoke(nameof(TurnOnCollision), respawnShieldTime);
-    }
+    [SerializeField] private Rigidbody2D rb;
+    [SerializeField] private Transform groundCheck;
+    [SerializeField] private  LayerMask groundLayer;
 
-    private void TurnOnCollision()
+    void Update()
     {
-        this.gameObject.layer = LayerMask.NameToLayer("Player");
-    }
+        horizontal = Input.GetAxisRaw("Horizontal");
 
-    private void Update()
-    {
-        _thrusting = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow);
-        //Turn Left
-        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
+        if(Input.GetButtonDown("Jump") && IsGrounded())
         {
-            _turnDirection = 1.0f;
+            rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
         }
-        //Turn Right
-        else if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
+        if (Input.GetButtonDown("Jump") && rb.velocity.y> 0f)
         {
-            _turnDirection = -1.0f;
-        }
-        else
-        {
-            _turnDirection = 0.0f;
-        }
-        if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0))
-        {
-            
+            rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.5f);
         }
     }
 
     private void FixedUpdate()
     {
-        if (_thrusting)
-        {
-            _rigidbody2D.AddForce(this.transform.up * this.thrustSpeed);
-        }
-        if (_turnDirection != 0.0f)
-        {
-            _rigidbody2D.AddTorque(_turnDirection * this.turnSpeed);
-        }
-
+        rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
     }
 
-
-    private void OnCollisionEnter2D(Collision2D collision)
+    private bool IsGrounded()
     {
-        if (collision.gameObject.CompareTag("Asteroid"))
-        {
-            _rigidbody2D.velocity = Vector3.zero;
-            _rigidbody2D.angularVelocity = 0.0f;
-            this.gameObject.SetActive(false);
-
-
-        }
+        return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
     }
 
-
-
+    private void Flip()
+    {
+        if (isFacingRight && horizontal < 0f || !isFacingRight && horizontal >0f)
+        {
+            isFacingRight = !isFacingRight;
+            Vector3 localScale = transform.localScale;
+            localScale.x *= -1f;
+            transform.localScale = localScale;
+        }
+    }
 }
